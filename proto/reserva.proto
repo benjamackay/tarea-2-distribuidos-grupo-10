@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package reserva;
+
+//Cliente-Reserva
+service ReservaService {
+    rpc EnviarSolicitud (SolicitudReserva) returns (ConfirmacionRecepcion);
+    rpc ProcesarReservas (ListaSolicitudes) returns (ConfirmacionRecepcion);
+}
+
+//Reserva-Registro
+service RegistroService {
+    rpc RegistrarReserva (ReservaConfirmada) returns (ConfirmacionRegistro);
+}
+
+//Mensajes
+message SolicitudReserva {
+    string name = 1;
+    string phone = 2;
+    int32 party_size = 3;
+    string preferences = 4;
+}
+
+message ListaSolicitudes {
+    repeated SolicitudReserva solicitudes = 1;
+}
+
+message ReservaConfirmada {
+    string reservation_id = 1;
+    string name = 2;
+    string phone = 3;
+    int32 party_size = 4;
+    string preferences = 5;
+    string table_id = 6;
+    string status = 7;
+}
+
+message ConfirmacionRecepcion {
+    bool success = 1;
+    string message = 2;
+}
+
+message ConfirmacionRegistro {
+    bool success = 1;
+    string message = 2;
+}

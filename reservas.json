@@ -1,0 +1,32 @@
+[
+    {
+        "name": "Ian Cooper",
+        "phone": "+56978985023",
+        "party_size": 4,
+        "preferences": "fumadores"
+    },
+    {
+        "name": "Cristobal Alvarez", 
+        "phone": "+56970982735",
+        "party_size": 10,
+        "preferences": "exterior"
+    },
+    {
+        "name": "Jorge Alvarado",
+        "phone": "+56970921685", 
+        "party_size": 2,
+        "preferences": "interior"
+    },
+    {
+        "name": "Albert Einstein",
+        "phone": "+56912345678",
+        "party_size": 8, 
+        "preferences": "interior"
+    },
+    {
+        "name": "Benjamin Mckay",
+        "phone": "+56987654321",
+        "party_size": 4,
+        "preferences": "fumadores"
+    }
+]
