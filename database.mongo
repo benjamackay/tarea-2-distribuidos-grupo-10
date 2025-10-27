@@ -1,0 +1,12 @@
+# Configuración de la Base de Datos
+Base de datos: restaurante
+Colecciones: mesas, reservas
+
+# Comando para inicializar:
+# mongo init_mesas.js
+
+# Comando para ver mesas:
+# db.mesas.find().pretty()
+
+# Comando para ver reservas:
+# db.reservas.find().pretty()
