@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package monitoreo;
+option go_package = "./proto;monitoreo";
 
 //Monitoreo y Cliente
 service MonitoreoService {
