@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v6.33.0
-// source: monitoreo.proto
+// source: proto/monitoreo.proto
 
 package monitoreo
 
@@ -24,8 +24,8 @@ const (
 type EstadoReserva struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`   // "exitosa", "fallida"
-	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"` //Detalles específicos
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	TableId       string                 `protobuf:"bytes,4,opt,name=table_id,json=tableId,proto3" json:"table_id,omitempty"`
 	PartySize     int32                  `protobuf:"varint,5,opt,name=party_size,json=partySize,proto3" json:"party_size,omitempty"`
 	Preferences   string                 `protobuf:"bytes,6,opt,name=preferences,proto3" json:"preferences,omitempty"`
@@ -35,7 +35,7 @@ type EstadoReserva struct {
 
 func (x *EstadoReserva) Reset() {
 	*x = EstadoReserva{}
-	mi := &file_monitoreo_proto_msgTypes[0]
+	mi := &file_proto_monitoreo_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +47,7 @@ func (x *EstadoReserva) String() string {
 func (*EstadoReserva) ProtoMessage() {}
 
 func (x *EstadoReserva) ProtoReflect() protoreflect.Message {
-	mi := &file_monitoreo_proto_msgTypes[0]
+	mi := &file_proto_monitoreo_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +60,7 @@ func (x *EstadoReserva) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EstadoReserva.ProtoReflect.Descriptor instead.
 func (*EstadoReserva) Descriptor() ([]byte, []int) {
-	return file_monitoreo_proto_rawDescGZIP(), []int{0}
+	return file_proto_monitoreo_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *EstadoReserva) GetName() string {
@@ -114,7 +114,7 @@ type ConfirmacionCliente struct {
 
 func (x *ConfirmacionCliente) Reset() {
 	*x = ConfirmacionCliente{}
-	mi := &file_monitoreo_proto_msgTypes[1]
+	mi := &file_proto_monitoreo_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -126,7 +126,7 @@ func (x *ConfirmacionCliente) String() string {
 func (*ConfirmacionCliente) ProtoMessage() {}
 
 func (x *ConfirmacionCliente) ProtoReflect() protoreflect.Message {
-	mi := &file_monitoreo_proto_msgTypes[1]
+	mi := &file_proto_monitoreo_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -139,7 +139,7 @@ func (x *ConfirmacionCliente) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmacionCliente.ProtoReflect.Descriptor instead.
 func (*ConfirmacionCliente) Descriptor() ([]byte, []int) {
-	return file_monitoreo_proto_rawDescGZIP(), []int{1}
+	return file_proto_monitoreo_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ConfirmacionCliente) GetReceived() bool {
@@ -149,11 +149,11 @@ func (x *ConfirmacionCliente) GetReceived() bool {
 	return false
 }
 
-var File_monitoreo_proto protoreflect.FileDescriptor
+var File_proto_monitoreo_proto protoreflect.FileDescriptor
 
-const file_monitoreo_proto_rawDesc = "" +
+const file_proto_monitoreo_proto_rawDesc = "" +
 	"\n" +
-	"\x0fmonitoreo.proto\x12\tmonitoreo\"\xb1\x01\n" +
+	"\x15proto/monitoreo.proto\x12\tmonitoreo\"\xb1\x01\n" +
 	"\rEstadoReserva\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x18\n" +
@@ -166,26 +166,26 @@ const file_monitoreo_proto_rawDesc = "" +
 	"\breceived\x18\x01 \x01(\bR\breceived2\xb8\x01\n" +
 	"\x10MonitoreoService\x12M\n" +
 	"\x11ActualizarCliente\x12\x18.monitoreo.EstadoReserva\x1a\x1e.monitoreo.ConfirmacionCliente\x12U\n" +
-	"\x15StreamActualizaciones\x12\x18.monitoreo.EstadoReserva\x1a\x1e.monitoreo.ConfirmacionCliente(\x010\x01B\x13Z\x11./proto;monitoreob\x06proto3"
+	"\x15StreamActualizaciones\x12\x18.monitoreo.EstadoReserva\x1a\x1e.monitoreo.ConfirmacionCliente(\x010\x01B\x1bZ\x19proto/monitoreo;monitoreob\x06proto3"
 
 var (
-	file_monitoreo_proto_rawDescOnce sync.Once
-	file_monitoreo_proto_rawDescData []byte
+	file_proto_monitoreo_proto_rawDescOnce sync.Once
+	file_proto_monitoreo_proto_rawDescData []byte
 )
 
-func file_monitoreo_proto_rawDescGZIP() []byte {
-	file_monitoreo_proto_rawDescOnce.Do(func() {
-		file_monitoreo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_monitoreo_proto_rawDesc), len(file_monitoreo_proto_rawDesc)))
+func file_proto_monitoreo_proto_rawDescGZIP() []byte {
+	file_proto_monitoreo_proto_rawDescOnce.Do(func() {
+		file_proto_monitoreo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_monitoreo_proto_rawDesc), len(file_proto_monitoreo_proto_rawDesc)))
 	})
-	return file_monitoreo_proto_rawDescData
+	return file_proto_monitoreo_proto_rawDescData
 }
 
-var file_monitoreo_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_monitoreo_proto_goTypes = []any{
+var file_proto_monitoreo_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_monitoreo_proto_goTypes = []any{
 	(*EstadoReserva)(nil),       // 0: monitoreo.EstadoReserva
 	(*ConfirmacionCliente)(nil), // 1: monitoreo.ConfirmacionCliente
 }
-var file_monitoreo_proto_depIdxs = []int32{
+var file_proto_monitoreo_proto_depIdxs = []int32{
 	0, // 0: monitoreo.MonitoreoService.ActualizarCliente:input_type -> monitoreo.EstadoReserva
 	0, // 1: monitoreo.MonitoreoService.StreamActualizaciones:input_type -> monitoreo.EstadoReserva
 	1, // 2: monitoreo.MonitoreoService.ActualizarCliente:output_type -> monitoreo.ConfirmacionCliente
@@ -197,26 +197,26 @@ var file_monitoreo_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_monitoreo_proto_init() }
-func file_monitoreo_proto_init() {
-	if File_monitoreo_proto != nil {
+func init() { file_proto_monitoreo_proto_init() }
+func file_proto_monitoreo_proto_init() {
+	if File_proto_monitoreo_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_monitoreo_proto_rawDesc), len(file_monitoreo_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_monitoreo_proto_rawDesc), len(file_proto_monitoreo_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_monitoreo_proto_goTypes,
-		DependencyIndexes: file_monitoreo_proto_depIdxs,
-		MessageInfos:      file_monitoreo_proto_msgTypes,
+		GoTypes:           file_proto_monitoreo_proto_goTypes,
+		DependencyIndexes: file_proto_monitoreo_proto_depIdxs,
+		MessageInfos:      file_proto_monitoreo_proto_msgTypes,
 	}.Build()
-	File_monitoreo_proto = out.File
-	file_monitoreo_proto_goTypes = nil
-	file_monitoreo_proto_depIdxs = nil
+	File_proto_monitoreo_proto = out.File
+	file_proto_monitoreo_proto_goTypes = nil
+	file_proto_monitoreo_proto_depIdxs = nil
 }

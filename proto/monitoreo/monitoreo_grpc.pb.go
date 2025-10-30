@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.33.0
-// source: monitoreo.proto
+// source: proto/monitoreo.proto
 
 package monitoreo
 
@@ -26,8 +26,6 @@ const (
 // MonitoreoServiceClient is the client API for MonitoreoService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Monitoreo y Cliente
 type MonitoreoServiceClient interface {
 	ActualizarCliente(ctx context.Context, in *EstadoReserva, opts ...grpc.CallOption) (*ConfirmacionCliente, error)
 	StreamActualizaciones(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[EstadoReserva, ConfirmacionCliente], error)
@@ -67,8 +65,6 @@ type MonitoreoService_StreamActualizacionesClient = grpc.BidiStreamingClient[Est
 // MonitoreoServiceServer is the server API for MonitoreoService service.
 // All implementations must embed UnimplementedMonitoreoServiceServer
 // for forward compatibility.
-//
-// Monitoreo y Cliente
 type MonitoreoServiceServer interface {
 	ActualizarCliente(context.Context, *EstadoReserva) (*ConfirmacionCliente, error)
 	StreamActualizaciones(grpc.BidiStreamingServer[EstadoReserva, ConfirmacionCliente]) error
@@ -154,5 +150,5 @@ var MonitoreoService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "monitoreo.proto",
+	Metadata: "proto/monitoreo.proto",
 }

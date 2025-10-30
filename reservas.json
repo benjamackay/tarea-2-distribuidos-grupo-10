@@ -22,11 +22,5 @@
         "phone": "+56912345678",
         "party_size": 8, 
         "preferences": "interior"
-    },
-    {
-        "name": "Benjamin Mckay",
-        "phone": "+56987654321",
-        "party_size": 4,
-        "preferences": "fumadores"
     }
 ]

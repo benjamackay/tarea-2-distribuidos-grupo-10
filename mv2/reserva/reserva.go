@@ -2,27 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"net"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc"
+
+	registroPB "tarea-2-distribuidos-grupo-10/proto/registro"
+	reservaPB "tarea-2-distribuidos-grupo-10/proto/reserva"
 )
 
-// Estructura reservas
-type SolicitudReserva struct {
-	Name        string `json:"name"`
-	Phone       string `json:"phone"`
-	PartySize   int    `json:"party_size"`
-	Preferences string `json:"preferences"`
-}
-
-// Estructura mesas
 type Mesa struct {
 	TableID  string `bson:"table_id"`
 	Capacity int    `bson:"capacity"`
@@ -30,105 +27,198 @@ type Mesa struct {
 	Tipo     string `bson:"tipo"`
 }
 
-// Estructura resultados
-type ResultadoReserva struct {
-	Solicitud SolicitudReserva
-	Mesa      *Mesa
-	Exito     bool
-	Mensaje   string
+type ReservaServer struct {
+	reservaPB.UnimplementedReservaServiceServer
+	dbMesas  *mongo.Collection
+	registro registroPB.RegistroServiceClient
+	rabbitCh *amqp.Channel
+}
+
+func (s *ReservaServer) EnviarSolicitud(ctx context.Context, req *reservaPB.SolicitudReserva) (*reservaPB.ConfirmacionRecepcion, error) {
+	msg, ok := s.procesarUna(ctx, req)
+	return &reservaPB.ConfirmacionRecepcion{Success: ok, Message: msg}, nil
+}
+
+func (s *ReservaServer) ProcesarReservas(ctx context.Context, lista *reservaPB.ListaSolicitudes) (*reservaPB.ConfirmacionRecepcion, error) {
+	var b strings.Builder
+	b.WriteString("Solicitudes de reserva recibidas\n")
+	for _, r := range lista.Solicitudes {
+		lineas, _ := s.procesarUna(ctx, r)
+		if !strings.HasSuffix(lineas, "\n") {
+			lineas += "\n"
+		}
+		b.WriteString(lineas)
+	}
+	return &reservaPB.ConfirmacionRecepcion{Success: true, Message: b.String()}, nil
+}
+
+func (s *ReservaServer) procesarUna(ctx context.Context, req *reservaPB.SolicitudReserva) (string, bool) {
+	name := req.GetName()
+	pax := req.GetPartySize()
+	zone := normalizaZona(req.GetPreferences())
+
+	fDisp := bson.M{"status": "Disponible"}
+	cur, err := s.dbMesas.Find(ctx, fDisp)
+	if err != nil {
+		return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nError de base de datos.",
+			name, pax, zone), false
+	}
+	defer cur.Close(ctx)
+
+	var todas []Mesa
+	for cur.Next(ctx) {
+		var m Mesa
+		if err := cur.Decode(&m); err == nil {
+			todas = append(todas, m)
+		}
+	}
+
+	var matchZoneCap, capAnyZone, anyInZone []Mesa
+	for _, m := range todas {
+		if strings.EqualFold(normalizaZona(m.Tipo), zone) {
+			anyInZone = append(anyInZone, m)
+			if m.Capacity >= int(pax) {
+				matchZoneCap = append(matchZoneCap, m)
+			}
+		}
+		if m.Capacity >= int(pax) {
+			capAnyZone = append(capAnyZone, m)
+		}
+	}
+
+	sort.Slice(matchZoneCap, func(i, j int) bool { return matchZoneCap[i].Capacity < matchZoneCap[j].Capacity })
+	sort.Slice(capAnyZone, func(i, j int) bool { return capAnyZone[i].Capacity < capAnyZone[j].Capacity })
+
+	if len(matchZoneCap) > 0 {
+		m := matchZoneCap[0]
+		if s.reservaMesa(ctx, m.TableID) {
+			s.notificarRegistro(ctx, req, m)
+			s.publicarCola(true, name, m.TableID, zone, pax)
+			idFmt := formateaID(m.TableID)
+			return fmt.Sprintf("Reserva de %s para %d personas en zona %s exitosa.\nSe ha asignado %s (capacidad %d personas) en zona %s.",
+				name, pax, zone, idFmt, m.Capacity, normalizaZona(m.Tipo)), true
+		}
+	}
+
+	if len(capAnyZone) > 0 {
+		m := capAnyZone[0]
+		if s.reservaMesa(ctx, m.TableID) {
+			s.notificarRegistro(ctx, req, m)
+			s.publicarCola(true, name, m.TableID, zone, pax)
+			idFmt := formateaID(m.TableID)
+			return fmt.Sprintf("Reserva de %s para %d personas en zona %s exitosa con modificaciones.\nSe ha asignado %s (capacidad %d personas) en zona %s.",
+				name, pax, zone, idFmt, m.Capacity, normalizaZona(m.Tipo)), true
+		}
+	}
+
+	if len(anyInZone) > 0 {
+		s.publicarCola(false, name, "", zone, pax)
+		return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nNo hay mesas con esa capacidad disponibles.",
+			name, pax, zone), false
+	}
+
+	s.publicarCola(false, name, "", zone, pax)
+	return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nNo hay mesas en zona %s disponibles.",
+		name, pax, zone, zone), false
+}
+
+func (s *ReservaServer) reservaMesa(ctx context.Context, tableID string) bool {
+	_, err := s.dbMesas.UpdateOne(ctx, bson.M{"table_id": tableID, "status": "Disponible"}, bson.M{"$set": bson.M{"status": "Reservada"}})
+	return err == nil
+}
+
+func (s *ReservaServer) notificarRegistro(ctx context.Context, req *reservaPB.SolicitudReserva, m Mesa) {
+	if s.registro == nil {
+		return
+	}
+	_, _ = s.registro.RegistrarReserva(ctx, &registroPB.ReservaConfirmada{
+		ReservationId: fmt.Sprintf("res-%d", time.Now().UnixNano()),
+		Name:          req.GetName(),
+		Phone:         req.GetPhone(),
+		PartySize:     req.GetPartySize(),
+		Preferences:   req.GetPreferences(),
+		TableId:       m.TableID,
+		Status:        "Confirmada",
+	})
+}
+
+func (s *ReservaServer) publicarCola(ok bool, name, tableID, pref string, pax int32) {
+	if s.rabbitCh == nil {
+		return
+	}
+	var body string
+	if ok {
+		body = fmt.Sprintf("OK|%s|%s|%s|%d", name, tableID, pref, pax)
+	} else {
+		body = fmt.Sprintf("FAIL|%s|%s|%d", name, pref, pax)
+	}
+	_ = s.rabbitCh.Publish("", "reservas", false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte(body)})
+}
+
+func normalizaZona(z string) string {
+	z = strings.TrimSpace(strings.ToLower(z))
+	switch z {
+	case "fumador", "fumadores":
+		return "fumadores"
+	case "no fumador", "no fumadores", "nofumadores", "no-fumadores":
+		return "no fumadores"
+	case "interior":
+		return "interior"
+	case "exterior":
+		return "exterior"
+	default:
+		return z
+	}
+}
+
+var reMesaNum = regexp.MustCompile(`(?i)^mesa[-_]?(\d+)$`)
+
+func formateaID(id string) string {
+	if m := reMesaNum.FindStringSubmatch(id); len(m) == 2 {
+		return fmt.Sprintf("mesa-%02s", m[1])
+	}
+	return strings.ToLower(id)
 }
 
 func main() {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+	mc, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017")) // cambiar localhost a 10.10.31.8 en MV2
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	if err := mc.Connect(ctx); err != nil {
+		log.Fatal(err)
+	}
+	db := mc.Database("tarea2-sd")
+	mesasCol := db.Collection("mesas")
 
-	err = client.Connect(ctx)
+	regConn, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) // cambiar localhost a IP de MV3 (10.10.31.9)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer client.Disconnect(ctx)
+	regClient := registroPB.NewRegistroServiceClient(regConn)
 
-	db := client.Database("restaurante")
-	coleccionMesas := db.Collection("mesas")
+	rabbitConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") // cambiar localhost a IP de MV1 (10.10.31.7)
+	if err != nil {
+		log.Println("RabbitMQ no disponible:", err)
+	}
+	var rabbitCh *amqp.Channel
+	if rabbitConn != nil {
+		rabbitCh, _ = rabbitConn.Channel()
+		if rabbitCh != nil {
+			_, _ = rabbitCh.QueueDeclare("reservas", false, false, false, false, nil)
+		}
+	}
 
-	reservasData, err := ioutil.ReadFile("../../reservas.json") //leer reservas
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	var solicitudes []SolicitudReserva
-	if err := json.Unmarshal(reservasData, &solicitudes); err != nil {
+	grpcServer := grpc.NewServer()
+	reservaPB.RegisterReservaServiceServer(grpcServer, &ReservaServer{dbMesas: mesasCol, registro: regClient, rabbitCh: rabbitCh})
+	log.Println("✅ Servicio de reservas (MV2) escuchando en :50051")
+	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
-
-	//procesar solicitudes
-	for _, solicitud := range solicitudes {
-		resultado := asignarMesa(ctx, coleccionMesas, solicitud)
-		if resultado.Exito {
-			fmt.Printf("Reserva de %s para %d personas exitosa. Mesa asignada: %s (%d personas, %s)\n",
-				resultado.Solicitud.Name, resultado.Solicitud.PartySize,
-				resultado.Mesa.TableID, resultado.Mesa.Capacity, resultado.Mesa.Tipo)
-		} else {
-			fmt.Printf("Reserva de %s para %d personas fallida. Motivo: %s\n",
-				resultado.Solicitud.Name, resultado.Solicitud.PartySize, resultado.Mensaje)
-		}
-	}
-}
-
-// asigna mesas segun reglas
-func asignarMesa(ctx context.Context, coleccion *mongo.Collection, solicitud SolicitudReserva) ResultadoReserva {
-	filter := bson.M{"status": "Disponible", "capacity": bson.M{"$gte": solicitud.PartySize}} //busca mesas
-	cursor, err := coleccion.Find(ctx, filter)
-	if err != nil {
-		return ResultadoReserva{Solicitud: solicitud, Exito: false, Mensaje: "Error al consultar la base de datos"}
-	}
-	defer cursor.Close(ctx)
-
-	var mesas []Mesa
-	for cursor.Next(ctx) {
-		var m Mesa
-		if err := cursor.Decode(&m); err != nil {
-			continue
-		}
-		//filtra preferencias
-		if preferenciasExcluyentes(solicitud.Preferences, m.Tipo) {
-			continue
-		}
-		mesas = append(mesas, m)
-	}
-
-	if len(mesas) == 0 {
-		return ResultadoReserva{Solicitud: solicitud, Exito: false, Mensaje: "No hay mesas disponibles según preferencia y tamaño"}
-	}
-
-	//elegir mas pequeña
-	sort.Slice(mesas, func(i, j int) bool {
-		return mesas[i].Capacity < mesas[j].Capacity
-	})
-
-	mesaAsignada := mesas[0]
-
-	//se cambia el estado de la mesa
-	_, err = coleccion.UpdateOne(ctx, bson.M{"table_id": mesaAsignada.TableID}, bson.M{"$set": bson.M{"status": "Reservada"}})
-	if err != nil {
-		return ResultadoReserva{Solicitud: solicitud, Exito: false, Mensaje: "Error al actualizar mesa en la base de datos"}
-	}
-
-	return ResultadoReserva{Solicitud: solicitud, Mesa: &mesaAsignada, Exito: true}
-}
-
-// verificar preferencias excluyentes
-func preferenciasExcluyentes(solicitud string, mesaTipo string) bool {
-	if (solicitud == "fumadores" && mesaTipo == "no fumadores") || (solicitud == "no fumadores" && mesaTipo == "fumadores") {
-		return true
-	}
-	if (solicitud == "interior" && mesaTipo == "exterior") || (solicitud == "exterior" && mesaTipo == "interior") {
-		return true
-	}
-	return false
 }

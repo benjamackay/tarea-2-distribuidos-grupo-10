@@ -1,9 +1,8 @@
 syntax = "proto3";
 
 package monitoreo;
-option go_package = "./proto;monitoreo";
+option go_package = "proto/monitoreo;monitoreo";
 
-//Monitoreo y Cliente
 service MonitoreoService {
     rpc ActualizarCliente (EstadoReserva) returns (ConfirmacionCliente);
     rpc StreamActualizaciones (stream EstadoReserva) returns (stream ConfirmacionCliente);
@@ -11,8 +10,8 @@ service MonitoreoService {
 
 message EstadoReserva {
     string name = 1;
-    string status = 2;  // "exitosa", "fallida"
-    string message = 3; //Detalles específicos
+    string status = 2;
+    string message = 3;
     string table_id = 4;
     int32 party_size = 5;
     string preferences = 6;

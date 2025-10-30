@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package registro;
+option go_package = "proto/registro;registro";
+
+service RegistroService {
+    rpc RegistrarReserva (ReservaConfirmada) returns (ConfirmacionRegistro);
+}
+
+message ReservaConfirmada {
+    string reservation_id = 1;
+    string name = 2;
+    string phone = 3;
+    int32 party_size = 4;
+    string preferences = 5;
+    string table_id = 6;
+    string status = 7;
+}
+
+message ConfirmacionRegistro {
+    bool success = 1;
+    string message = 2;
+}

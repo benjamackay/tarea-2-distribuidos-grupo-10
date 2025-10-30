@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.33.0
-// source: reserva.proto
+// source: proto/reserva.proto
 
 package reserva
 
@@ -26,8 +26,6 @@ const (
 // ReservaServiceClient is the client API for ReservaService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Cliente-Reserva
 type ReservaServiceClient interface {
 	EnviarSolicitud(ctx context.Context, in *SolicitudReserva, opts ...grpc.CallOption) (*ConfirmacionRecepcion, error)
 	ProcesarReservas(ctx context.Context, in *ListaSolicitudes, opts ...grpc.CallOption) (*ConfirmacionRecepcion, error)
@@ -64,8 +62,6 @@ func (c *reservaServiceClient) ProcesarReservas(ctx context.Context, in *ListaSo
 // ReservaServiceServer is the server API for ReservaService service.
 // All implementations must embed UnimplementedReservaServiceServer
 // for forward compatibility.
-//
-// Cliente-Reserva
 type ReservaServiceServer interface {
 	EnviarSolicitud(context.Context, *SolicitudReserva) (*ConfirmacionRecepcion, error)
 	ProcesarReservas(context.Context, *ListaSolicitudes) (*ConfirmacionRecepcion, error)
@@ -159,111 +155,5 @@ var ReservaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "reserva.proto",
-}
-
-const (
-	RegistroService_RegistrarReserva_FullMethodName = "/reserva.RegistroService/RegistrarReserva"
-)
-
-// RegistroServiceClient is the client API for RegistroService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Reserva-Registro
-type RegistroServiceClient interface {
-	RegistrarReserva(ctx context.Context, in *ReservaConfirmada, opts ...grpc.CallOption) (*ConfirmacionRegistro, error)
-}
-
-type registroServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewRegistroServiceClient(cc grpc.ClientConnInterface) RegistroServiceClient {
-	return &registroServiceClient{cc}
-}
-
-func (c *registroServiceClient) RegistrarReserva(ctx context.Context, in *ReservaConfirmada, opts ...grpc.CallOption) (*ConfirmacionRegistro, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConfirmacionRegistro)
-	err := c.cc.Invoke(ctx, RegistroService_RegistrarReserva_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// RegistroServiceServer is the server API for RegistroService service.
-// All implementations must embed UnimplementedRegistroServiceServer
-// for forward compatibility.
-//
-// Reserva-Registro
-type RegistroServiceServer interface {
-	RegistrarReserva(context.Context, *ReservaConfirmada) (*ConfirmacionRegistro, error)
-	mustEmbedUnimplementedRegistroServiceServer()
-}
-
-// UnimplementedRegistroServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedRegistroServiceServer struct{}
-
-func (UnimplementedRegistroServiceServer) RegistrarReserva(context.Context, *ReservaConfirmada) (*ConfirmacionRegistro, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegistrarReserva not implemented")
-}
-func (UnimplementedRegistroServiceServer) mustEmbedUnimplementedRegistroServiceServer() {}
-func (UnimplementedRegistroServiceServer) testEmbeddedByValue()                         {}
-
-// UnsafeRegistroServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to RegistroServiceServer will
-// result in compilation errors.
-type UnsafeRegistroServiceServer interface {
-	mustEmbedUnimplementedRegistroServiceServer()
-}
-
-func RegisterRegistroServiceServer(s grpc.ServiceRegistrar, srv RegistroServiceServer) {
-	// If the following call pancis, it indicates UnimplementedRegistroServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&RegistroService_ServiceDesc, srv)
-}
-
-func _RegistroService_RegistrarReserva_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReservaConfirmada)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RegistroServiceServer).RegistrarReserva(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RegistroService_RegistrarReserva_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RegistroServiceServer).RegistrarReserva(ctx, req.(*ReservaConfirmada))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// RegistroService_ServiceDesc is the grpc.ServiceDesc for RegistroService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var RegistroService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "reserva.RegistroService",
-	HandlerType: (*RegistroServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "RegistrarReserva",
-			Handler:    _RegistroService_RegistrarReserva_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "reserva.proto",
+	Metadata: "proto/reserva.proto",
 }
