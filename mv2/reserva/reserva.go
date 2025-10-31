@@ -217,7 +217,7 @@ func main() {
 	}
 	grpcServer := grpc.NewServer()
 	reservaPB.RegisterReservaServiceServer(grpcServer, &ReservaServer{dbMesas: mesasCol, registro: regClient, rabbitCh: rabbitCh})
-	log.Println("✅ Servicio de reservas (MV2) escuchando en :50051")
+	log.Println("Servicio de reservas (MV2) escuchando en :50051")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatal(err)
 	}

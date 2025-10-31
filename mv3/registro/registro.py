@@ -66,7 +66,7 @@ def serve():
         RegistroServicer(mongo_uri, db_name), server
     )
     server.add_insecure_port("[::]:50052")
-    logging.info("✅ registro.py escuchando en :50052")
+    logging.info("registro.py escuchando en :50052")
     server.start()
     server.wait_for_termination()
 

@@ -23,7 +23,7 @@ type clienteMonitoreoServer struct {
 }
 
 func (s *clienteMonitoreoServer) ActualizarCliente(ctx context.Context, est *monPB.EstadoReserva) (*monPB.ConfirmacionCliente, error) {
-	log.Println("📥 actualización recibida:", est.GetMessage())
+	log.Println("actualización recibida:", est.GetMessage())
 	return &monPB.ConfirmacionCliente{Received: true}, nil
 }
 
@@ -34,7 +34,7 @@ func startMonitoreoServer() {
 	}
 	srv := grpc.NewServer()
 	monPB.RegisterMonitoreoServiceServer(srv, &clienteMonitoreoServer{})
-	log.Println("✅ Cliente (MV1) escuchando monitoreo en :50053")
+	log.Println("Cliente (MV1) escuchando monitoreo en :50053")
 	go srv.Serve(lis)
 }
 
@@ -58,7 +58,7 @@ func main() {
 	if err := json.Unmarshal(data, &reservas); err != nil {
 		log.Fatalf("json inválido: %v", err)
 	}
-	log.Printf("📄 se cargaron %d reservas desde JSON\n", len(reservas))
+	log.Printf("se cargaron %d reservas desde JSON\n", len(reservas))
 
 	// 3. conectar al servicio de reservas en MV2
 	// en PC: "localhost:50051"

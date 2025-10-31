@@ -38,10 +38,10 @@ func main() {
 	defer cliConn.Close()
 	monCli := monitoreo.NewMonitoreoServiceClient(cliConn)
 
-	log.Println("🟣 Monitoreo (MV1) escuchando cola 'reservas' y reenviando al cliente...")
+	log.Println("Monitoreo (MV1) escuchando cola 'reservas' y reenviando al cliente...")
 	for m := range msgs {
 		body := string(m.Body)
-		log.Println("📦 mensaje de cola:", body)
+		log.Println("mensaje de cola:", body)
 
 		_, err := monCli.ActualizarCliente(context.Background(), &monitoreo.EstadoReserva{
 			Name:    "sistema",
@@ -49,7 +49,7 @@ func main() {
 			Message: body,
 		})
 		if err != nil {
-			log.Println("⚠️ error avisando al cliente:", err)
+			log.Println("error avisando al cliente:", err)
 		}
 	}
 }
