@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	// RabbitMQ (cambiar a 10.10.31.7 si es la VM)
-	rmqConn, err := amqp.Dial("amqp://guest:guest@10.10.31.7:5672/")
+	// RabbitMQ (cambiar a 10.10.31.8 si es la VM)
+	rmqConn, err := amqp.Dial("amqp://guest:guest@10.10.31.8:5672/")
 	if err != nil {
 		log.Fatal("no pude conectar a rabbitmq:", err)
 	}
