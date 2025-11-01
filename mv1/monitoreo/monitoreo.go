@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
@@ -10,8 +11,18 @@ import (
 	"tarea-2-distribuidos-grupo-10/proto/monitoreo"
 )
 
+func dialCliente(addr string) monitoreo.MonitoreoServiceClient {
+	for {
+		conn, err := grpc.Dial(addr, grpc.WithInsecure())
+		if err == nil {
+			return monitoreo.NewMonitoreoServiceClient(conn)
+		}
+		log.Println("cliente gRPC no disponible, reintentando en 2s:", err)
+		time.Sleep(2 * time.Second)
+	}
+}
+
 func main() {
-	// RabbitMQ (cambiar a 10.10.31.8 si es la VM)
 	rmqConn, err := amqp.Dial("amqp://guest:guest@10.10.31.8:5672/")
 	if err != nil {
 		log.Fatal("no pude conectar a rabbitmq:", err)
@@ -24,19 +35,22 @@ func main() {
 	}
 	defer ch.Close()
 
-	_, err = ch.QueueDeclare("reservas", false, false, false, false, nil)
+	// cola durable para no perder mensajes si el monitoreo parte antes
+	_, err = ch.QueueDeclare(
+		"reservas",
+		true,  // durable
+		false, // auto-delete
+		false,
+		false,
+		nil,
+	)
 	if err != nil {
 		log.Fatal("no pude declarar cola reservas:", err)
 	}
 
-	_, _ = ch.QueuePurge("reservas", false)
+	// NO la purgamos
 
-	cliConn, err := grpc.Dial("10.10.31.9:50053", grpc.WithInsecure()) // 10.10.31.9 o localhost
-	if err != nil {
-		log.Fatal("no pude conectar al cliente:", err)
-	}
-	defer cliConn.Close()
-	monCli := monitoreo.NewMonitoreoServiceClient(cliConn)
+	monCli := dialCliente("10.10.31.9:50053")
 
 	msgs, err := ch.Consume("reservas", "", true, false, false, false, nil)
 	if err != nil {
@@ -55,7 +69,8 @@ func main() {
 			Message: body,
 		})
 		if err != nil {
-			log.Println("error avisando al cliente:", err)
+			log.Println("error avisando al cliente, reintentando conexión:", err)
+			monCli = dialCliente("10.10.31.9:50053")
 		}
 	}
 }
