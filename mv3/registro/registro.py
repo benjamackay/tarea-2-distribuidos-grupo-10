@@ -55,7 +55,7 @@ class RegistroServicer(registro_pb2_grpc.RegistroServiceServicer):
 
 
 def serve():
-    mongo_uri = "mongodb://localhost:27017" # 10.10.31.8 o localhost
+    mongo_uri = "mongodb://10.10.31.8:27017" # 10.10.31.8 o localhost
     db_name = "tarea2-sd"
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
