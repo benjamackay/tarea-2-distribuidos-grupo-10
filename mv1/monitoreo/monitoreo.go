@@ -35,11 +35,10 @@ func main() {
 	}
 	defer ch.Close()
 
-	// cola durable para no perder mensajes si el monitoreo parte antes
 	_, err = ch.QueueDeclare(
 		"reservas",
-		true,  // durable
-		false, // auto-delete
+		false,
+		false,
 		false,
 		false,
 		nil,
@@ -47,8 +46,6 @@ func main() {
 	if err != nil {
 		log.Fatal("no pude declarar cola reservas:", err)
 	}
-
-	// NO la purgamos
 
 	monCli := dialCliente("10.10.31.9:50053")
 
