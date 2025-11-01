@@ -55,75 +55,100 @@ func (s *ReservaServer) ProcesarReservas(ctx context.Context, lista *reservaPB.L
 func (s *ReservaServer) procesarUna(ctx context.Context, req *reservaPB.SolicitudReserva) (string, bool) {
 	name := req.GetName()
 	pax := req.GetPartySize()
-	zone := normalizaZona(req.GetPreferences())
+	pref := normalizaZona(req.GetPreferences())
 
-	fDisp := bson.M{"status": "Disponible"}
-	cur, err := s.dbMesas.Find(ctx, fDisp)
+	cur, err := s.dbMesas.Find(ctx, bson.M{"status": "Disponible"})
 	if err != nil {
-		return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nError de base de datos.",
-			name, pax, zone), false
+		return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nError de base de datos.", name, pax, pref), false
 	}
 	defer cur.Close(ctx)
 
-	var todas []Mesa
+	var mesas []Mesa
 	for cur.Next(ctx) {
 		var m Mesa
 		if err := cur.Decode(&m); err == nil {
-			todas = append(todas, m)
+			mesas = append(mesas, m)
 		}
 	}
 
-	var matchZoneCap, capAnyZone, anyInZone []Mesa
-	for _, m := range todas {
-		if strings.EqualFold(normalizaZona(m.Tipo), zone) {
-			anyInZone = append(anyInZone, m)
-			if m.Capacity >= int(pax) {
-				matchZoneCap = append(matchZoneCap, m)
-			}
-		}
-		if m.Capacity >= int(pax) {
-			capAnyZone = append(capAnyZone, m)
-		}
+	capaces := filtraYOrdena(mesas, func(m Mesa) bool {
+		return m.Capacity >= int(pax)
+	})
+	if len(capaces) == 0 {
+		s.publicarCola(false, name, "", pref, pax)
+		return fmt.Sprintf(
+			"Reserva de %s para %d personas en zona %s fallida.\nNo hay mesas con esa capacidad disponibles.",
+			name, pax, pref,
+		), false
 	}
 
-	sort.Slice(matchZoneCap, func(i, j int) bool { return matchZoneCap[i].Capacity < matchZoneCap[j].Capacity })
-	sort.Slice(capAnyZone, func(i, j int) bool { return capAnyZone[i].Capacity < capAnyZone[j].Capacity })
-
-	if len(matchZoneCap) > 0 {
-		m := matchZoneCap[0]
+	preferidas := filtraYOrdena(capaces, func(m Mesa) bool {
+		return normalizaZona(m.Tipo) == pref
+	})
+	if len(preferidas) > 0 {
+		m := preferidas[0]
 		if s.reservaMesa(ctx, m.TableID) {
 			s.notificarRegistro(ctx, req, m)
-			s.publicarCola(true, name, m.TableID, zone, pax)
-			idFmt := formateaID(m.TableID)
-			return fmt.Sprintf("Reserva de %s para %d personas en zona %s exitosa.\nSe ha asignado %s (capacidad %d personas) en zona %s.",
-				name, pax, zone, idFmt, m.Capacity, normalizaZona(m.Tipo)), true
+			s.publicarCola(true, name, m.TableID, pref, pax)
+			return fmt.Sprintf(
+				"Reserva de %s para %d personas en zona %s exitosa.\nSe ha asignado %s (capacidad %d personas) en zona %s.",
+				name, pax, pref, formateaID(m.TableID), m.Capacity, normalizaZona(m.Tipo),
+			), true
 		}
 	}
 
-	if len(capAnyZone) > 0 {
-		m := capAnyZone[0]
+	compatibles := filtraYOrdena(capaces, func(m Mesa) bool {
+		return noExcluyente(pref, normalizaZona(m.Tipo))
+	})
+	if len(compatibles) > 0 {
+		m := compatibles[0]
 		if s.reservaMesa(ctx, m.TableID) {
 			s.notificarRegistro(ctx, req, m)
-			s.publicarCola(true, name, m.TableID, zone, pax)
-			idFmt := formateaID(m.TableID)
-			return fmt.Sprintf("Reserva de %s para %d personas en zona %s exitosa con modificaciones.\nSe ha asignado %s (capacidad %d personas) en zona %s.",
-				name, pax, zone, idFmt, m.Capacity, normalizaZona(m.Tipo)), true
+			s.publicarCola(true, name, m.TableID, pref, pax)
+			return fmt.Sprintf(
+				"Reserva de %s para %d personas en zona %s exitosa con modificaciones.\nSe ha asignado %s (capacidad %d personas) en zona %s.",
+				name, pax, pref, formateaID(m.TableID), m.Capacity, normalizaZona(m.Tipo),
+			), true
 		}
 	}
 
-	if len(anyInZone) > 0 {
-		s.publicarCola(false, name, "", zone, pax)
-		return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nNo hay mesas con esa capacidad disponibles.",
-			name, pax, zone), false
-	}
+	s.publicarCola(false, name, "", pref, pax)
+	return fmt.Sprintf(
+		"Reserva de %s para %d personas en zona %s fallida.\nNo hay mesas disponibles según preferencia.",
+		name, pax, pref,
+	), false
+}
 
-	s.publicarCola(false, name, "", zone, pax)
-	return fmt.Sprintf("Reserva de %s para %d personas en zona %s fallida.\nNo hay mesas en zona %s disponibles.",
-		name, pax, zone, zone), false
+func filtraYOrdena(mesas []Mesa, ok func(Mesa) bool) []Mesa {
+	r := make([]Mesa, 0)
+	for _, m := range mesas {
+		if ok(m) {
+			r = append(r, m)
+		}
+	}
+	sort.Slice(r, func(i, j int) bool { return r[i].Capacity < r[j].Capacity })
+	return r
+}
+
+func noExcluyente(pedida, mesa string) bool {
+	pedida = normalizaZona(pedida)
+	mesa = normalizaZona(mesa)
+
+	if (pedida == "fumadores" && mesa == "no fumadores") || (pedida == "no fumadores" && mesa == "fumadores") {
+		return false
+	}
+	if (pedida == "interior" && mesa == "exterior") || (pedida == "exterior" && mesa == "interior") {
+		return false
+	}
+	return true
 }
 
 func (s *ReservaServer) reservaMesa(ctx context.Context, tableID string) bool {
-	_, err := s.dbMesas.UpdateOne(ctx, bson.M{"table_id": tableID, "status": "Disponible"}, bson.M{"$set": bson.M{"status": "Reservada"}})
+	_, err := s.dbMesas.UpdateOne(
+		ctx,
+		bson.M{"table_id": tableID, "status": "Disponible"},
+		bson.M{"$set": bson.M{"status": "Reservada"}},
+	)
 	return err == nil
 }
 
@@ -152,7 +177,10 @@ func (s *ReservaServer) publicarCola(ok bool, name, tableID, pref string, pax in
 	} else {
 		body = fmt.Sprintf("FAIL|%s|%s|%d", name, pref, pax)
 	}
-	_ = s.rabbitCh.Publish("", "reservas", false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte(body)})
+	_ = s.rabbitCh.Publish("", "reservas", false, false, amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        []byte(body),
+	})
 }
 
 func normalizaZona(z string) string {
@@ -164,7 +192,7 @@ func normalizaZona(z string) string {
 		return "no fumadores"
 	case "interior":
 		return "interior"
-	case "exterior":
+	case "exterior", "aire libre", "terraza":
 		return "exterior"
 	default:
 		return z
@@ -193,13 +221,13 @@ func main() {
 	db := mc.Database("tarea2-sd")
 	mesasCol := db.Collection("mesas")
 
-	regConn, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) // cambiar localhost a IP de MV3 (10.10.31.9)
+	regConn, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) // cambiar localhost a 10.10.31.9 en MV3
 	if err != nil {
 		log.Fatal(err)
 	}
 	regClient := registroPB.NewRegistroServiceClient(regConn)
 
-	rabbitConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") // cambiar localhost a IP de MV1 (10.10.31.7)
+	rabbitConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") // cambiar localhost a 10.10.31.7 en MV1
 	if err != nil {
 		log.Println("RabbitMQ no disponible:", err)
 	}
@@ -216,7 +244,11 @@ func main() {
 		log.Fatal(err)
 	}
 	grpcServer := grpc.NewServer()
-	reservaPB.RegisterReservaServiceServer(grpcServer, &ReservaServer{dbMesas: mesasCol, registro: regClient, rabbitCh: rabbitCh})
+	reservaPB.RegisterReservaServiceServer(grpcServer, &ReservaServer{
+		dbMesas:  mesasCol,
+		registro: regClient,
+		rabbitCh: rabbitCh,
+	})
 	log.Println("Servicio de reservas (MV2) escuchando en :50051")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatal(err)

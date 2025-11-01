@@ -1,26 +1,38 @@
 [
     {
-        "name": "Ian Cooper",
+        "name": "Albert Einstein",
         "phone": "+56978985023",
+        "party_size": 8,
+        "preferences": "interior"
+    },
+    {
+        "name": "Gumball Watterson", 
+        "phone": "+56970982735",
         "party_size": 4,
         "preferences": "fumadores"
     },
     {
-        "name": "Cristobal Alvarez", 
-        "phone": "+56970982735",
-        "party_size": 10,
-        "preferences": "exterior"
-    },
-    {
-        "name": "Jorge Alvarado",
+        "name": "Pedro Picapiedra",
         "phone": "+56970921685", 
-        "party_size": 2,
+        "party_size": 4,
         "preferences": "interior"
     },
     {
-        "name": "Albert Einstein",
-        "phone": "+56912345678",
-        "party_size": 8, 
+        "name": "Juan Perez",
+        "phone": "+56970891233", 
+        "party_size": 8,
+        "preferences": "fumadores"
+    },
+    {
+        "name": "Homero Simpson",
+        "phone": "+56970891234", 
+        "party_size": 4,
+        "preferences": "no fumadores"
+    },
+    {
+        "name": "Timmy Turner",
+        "phone": "+56970891235", 
+        "party_size": 2,
         "preferences": "interior"
     }
 ]

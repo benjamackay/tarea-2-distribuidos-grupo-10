@@ -26,7 +26,6 @@ class RegistroServicer(registro_pb2_grpc.RegistroServiceServicer):
         )
 
         try:
-            # 1. guardar la reserva confirmada
             self.reservas_col.insert_one({
                 "reservation_id": request.reservation_id,
                 "name": request.name,
@@ -37,7 +36,6 @@ class RegistroServicer(registro_pb2_grpc.RegistroServiceServicer):
                 "status": request.status,
             })
 
-            # 2. actualizar mesa (solo si MV2 asignó una)
             if request.table_id:
                 self.mesas_col.update_one(
                     {"table_id": request.table_id},
@@ -57,7 +55,6 @@ class RegistroServicer(registro_pb2_grpc.RegistroServiceServicer):
 
 
 def serve():
-    # Mongo está en MV2
     mongo_uri = "mongodb://localhost:27017" # 10.10.31.8 o localhost
     db_name = "tarea2-sd"
 
