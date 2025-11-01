@@ -31,8 +31,7 @@ func main() {
 
 	_, _ = ch.QueuePurge("reservas", false)
 
-	// cambiar a "10.10.31.7:50053" si el cliente está en la VM
-	cliConn, err := grpc.Dial("10.10.31.7:50053", grpc.WithInsecure())
+	cliConn, err := grpc.Dial("10.10.31.9:50053", grpc.WithInsecure()) // 10.10.31.9 o localhost
 	if err != nil {
 		log.Fatal("no pude conectar al cliente:", err)
 	}
