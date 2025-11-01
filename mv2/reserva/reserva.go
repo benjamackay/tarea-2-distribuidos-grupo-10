@@ -235,7 +235,7 @@ func main() {
 	if rabbitConn != nil {
 		rabbitCh, _ = rabbitConn.Channel()
 		if rabbitCh != nil {
-			_, _ = rabbitCh.QueueDeclare("reservas", false, false, false, false, nil)
+			_, _ = rabbitCh.QueueDeclare("reservas", true, false, false, false, nil)
 		}
 	}
 
