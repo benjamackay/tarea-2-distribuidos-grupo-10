@@ -40,7 +40,7 @@ func main() {
 	go iniciarServidorMonitoreo() // escucha en :50053
 
 	// MV2 (reservas) -> cambiar localhost a 10.10.31.8 en las VMs
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("10.10.31.8:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("no pude conectar a MV2:", err)
 	}

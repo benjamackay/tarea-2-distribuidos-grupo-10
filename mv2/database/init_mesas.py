@@ -1,7 +1,7 @@
 import sys
 from pymongo import MongoClient
 
-MONGO_URI = "mongodb://localhost:27017/" # 10.10.31.8 o localhost
+MONGO_URI = "mongodb://10.10.31.8:27017/" # 10.10.31.8 o localhost
 DB_NAME = "tarea2-sd"
 
 def init_db():

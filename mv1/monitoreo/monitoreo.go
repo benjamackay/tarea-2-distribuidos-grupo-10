@@ -12,7 +12,7 @@ import (
 
 func main() {
 	// RabbitMQ (cambiar a 10.10.31.7 si es la VM)
-	rmqConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	rmqConn, err := amqp.Dial("amqp://guest:guest@10.10.31.7:5672/")
 	if err != nil {
 		log.Fatal("no pude conectar a rabbitmq:", err)
 	}
@@ -32,7 +32,7 @@ func main() {
 	_, _ = ch.QueuePurge("reservas", false)
 
 	// cambiar a "10.10.31.7:50053" si el cliente está en la VM
-	cliConn, err := grpc.Dial("127.0.0.1:50053", grpc.WithInsecure())
+	cliConn, err := grpc.Dial("10.10.31.7:50053", grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("no pude conectar al cliente:", err)
 	}

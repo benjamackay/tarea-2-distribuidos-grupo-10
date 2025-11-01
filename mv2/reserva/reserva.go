@@ -209,7 +209,7 @@ func formateaID(id string) string {
 }
 
 func main() {
-	mc, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017")) // cambiar localhost a 10.10.31.8 en MV2
+	mc, err := mongo.NewClient(options.Client().ApplyURI("mongodb://10.10.31.8:27017")) // cambiar localhost a 10.10.31.8 en MV2
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -221,13 +221,13 @@ func main() {
 	db := mc.Database("tarea2-sd")
 	mesasCol := db.Collection("mesas")
 
-	regConn, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) // cambiar localhost a 10.10.31.9 en MV3
+	regConn, err := grpc.Dial("10.10.31.9:50052", grpc.WithInsecure()) // cambiar localhost a 10.10.31.9 en MV3
 	if err != nil {
 		log.Fatal(err)
 	}
 	regClient := registroPB.NewRegistroServiceClient(regConn)
 
-	rabbitConn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") // cambiar localhost a 10.10.31.7 en MV1
+	rabbitConn, err := amqp.Dial("amqp://guest:guest@10.10.31.7:5672/") // cambiar localhost a 10.10.31.7 en MV1
 	if err != nil {
 		log.Println("RabbitMQ no disponible:", err)
 	}
