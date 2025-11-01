@@ -227,7 +227,7 @@ func main() {
 	}
 	regClient := registroPB.NewRegistroServiceClient(regConn)
 
-	rabbitConn, err := amqp.Dial("amqp://guest:guest@10.10.31.7:5672/") // cambiar localhost a 10.10.31.7 en MV1
+	rabbitConn, err := amqp.Dial("amqp://guest:guest@10.10.31.8:5672/") // cambiar localhost a 10.10.31.8 en MV2
 	if err != nil {
 		log.Println("RabbitMQ no disponible:", err)
 	}
