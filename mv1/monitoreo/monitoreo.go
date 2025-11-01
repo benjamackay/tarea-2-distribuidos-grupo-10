@@ -37,7 +37,7 @@ func main() {
 
 	_, err = ch.QueueDeclare(
 		"reservas",
-		false,
+		true,
 		false,
 		false,
 		false,
