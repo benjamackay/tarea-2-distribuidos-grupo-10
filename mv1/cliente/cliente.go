@@ -63,6 +63,8 @@ func main() {
 	}
 
 	fmt.Println(resp.Message)
+
+	select {}
 }
 
 func iniciarServidorMonitoreo() {
