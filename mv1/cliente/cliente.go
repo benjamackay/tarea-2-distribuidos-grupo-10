@@ -37,9 +37,12 @@ func main() {
 		log.Fatalf("json inválido: %v", err)
 	}
 
-	go iniciarServidorMonitoreo() // escucha en :50053
+	// Canal para esperar que el servidor de monitoreo esté listo
+	ready := make(chan struct{})
+	go iniciarServidorMonitoreo(ready)
+	<-ready // Esperar hasta que el servidor de monitoreo esté escuchando
 
-	// MV2 (reservas) -> cambiar localhost a 10.10.31.8 en las VMs
+	// Conexión a MV2 (reservas)
 	conn, err := grpc.Dial("10.10.31.8:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("no pude conectar a MV2:", err)
@@ -47,6 +50,7 @@ func main() {
 	defer conn.Close()
 	resCli := reservaPB.NewReservaServiceClient(conn)
 
+	// Preparar lista de solicitudes
 	lista := &reservaPB.ListaSolicitudes{}
 	for _, r := range reservas {
 		lista.Solicitudes = append(lista.Solicitudes, &reservaPB.SolicitudReserva{
@@ -64,17 +68,22 @@ func main() {
 
 	fmt.Println(resp.Message)
 
-	select {}
+	select {} // Mantener el cliente vivo para monitoreo
 }
 
-func iniciarServidorMonitoreo() {
+// arreglar monitoreo
+func iniciarServidorMonitoreo(ready chan struct{}) {
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {
 		log.Fatal("no pude escuchar monitoreo:", err)
 	}
 	s := grpc.NewServer()
 	monitoreoPB.RegisterMonitoreoServiceServer(s, &monitoreoServer{})
+
+	//servidor ready
+	close(ready)
 	log.Println("Cliente (MV1) escuchando monitoreo en :50053")
+
 	if err := s.Serve(lis); err != nil {
 		log.Fatal("error sirviendo monitoreo:", err)
 	}
