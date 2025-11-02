@@ -47,7 +47,7 @@ func main() {
 		log.Fatal("no pude declarar cola reservas:", err)
 	}
 
-	monCli := dialCliente("10.10.31.9:50053")
+	monCli := dialCliente("localhost:50053")
 
 	msgs, err := ch.Consume("reservas", "", true, false, false, false, nil)
 	if err != nil {
